@@ -9,16 +9,6 @@ import SwiftUI
 
 struct RestaurantListView: View {
     
-    //@State var restaurantIsFavorites = Array(repeating: false, count: 21)
-    /*
-    var restaurantNames = ["Cafe Deadend", "Homei", "Teakha", "Cafe Loisl", "Petite Oyster", "For Kee Restaurant", "Po's Atelier", "Bourke Street Bakery", "Haigh's Chocolate", "Palomino Espresso", "Upstate", "Traif", "Graham Avenue Meats", "Waffle & Wolf", "Five Leaves", "Cafe Lore", "Confessional", "Barrafina", "Donostia", "Royal Oak", "CASK Pub and Kitchen"]
-    
-    var restaurantImages = ["cafedeadend", "homei", "teakha", "cafeloisl", "petiteoyster", "forkee", "posatelier", "bourkestreetbakery", "haigh", "palomino", "upstate", "traif", "graham", "waffleandwolf", "fiveleaves", "cafelore", "confessional", "barrafina", "donostia", "royaloak", "cask"]
-    
-    var restaurantLocations = ["Hong Kong", "Hong Kong", "Hong Kong", "Hong Kong", "Hong Kong", "Hong Kong", "Hong Kong", "Sydney", "Sydney", "Sydney", "New York", "New York", "New York", "New York", "New York", "New York", "New York", "London", "London", "London", "London"]
-
-    var restaurantTypes = ["Coffee & Tea Shop", "Cafe", "Tea House", "Austrian / Causual Drink", "French", "Bakery", "Bakery", "Chocolate", "Cafe", "American / Seafood", "American", "American", "Breakfast & Brunch", "Coffee & Tea", "Coffee & Tea", "Latin American", "Spanish", "Spanish", "Spanish", "British", "Thai"] */
-    
     @State var restaurants = [
         Restaurant(name: "Cafe Deadend", type: "Coffee & Tea Shop", location: "Hong Kong", image: "cafedeadend", isFavorite: false),
         Restaurant(name: "Homei", type: "Cafe", location: "Hong Kong", image: "homei", isFavorite: false),
@@ -48,8 +38,11 @@ struct RestaurantListView: View {
             ForEach(restaurants.indices, id: \.self){index in
                 ListNormal(restaurant: $restaurants[index])
                 
-                
             }//forEach
+            .onDelete(perform: { indexSet in
+                    restaurants.remove(atOffsets: indexSet)
+                })
+            
             .listRowSeparator(.hidden)
         }//list
         .listStyle(.plain)
@@ -64,7 +57,10 @@ struct ContentView_Previews: PreviewProvider {
 
 struct ListNormal: View {
     
+    // MARK: Binding
     @Binding var restaurant: Restaurant
+    
+    // MARK: - State variables
     @State private var showOptions = false
     @State private var showError = false
     
@@ -97,24 +93,50 @@ struct ListNormal: View {
                     .foregroundColor(.yellow)
             }
         }//HStack
-        .onTapGesture {
-            showOptions.toggle()
-        }
-        .confirmationDialog("Que quieres hacer?", isPresented: $showOptions, titleVisibility: .visible) {
-            Button("Reservar mesa"){
+        .contextMenu{
+            Button {
                 self.showError.toggle()
+            } label: {
+                HStack {
+                    Text("Reserve table")
+                    Image(systemName: "phone")
+                }
             }
             
-            Button(restaurant.isFavorite ? "Desmarcar favorite" :"Marcar favorito"){
+            Button {
                 self.restaurant.isFavorite.toggle()
+            } label: {
+                HStack {
+                    Text(restaurant.isFavorite ? "Desmarcar favorite" : "Marcar favorito")
+                    Image(systemName: "heart")
+                }
             }
-        }
+            
+            Button {
+                self.showOptions.toggle()
+            } label: {
+                HStack {
+                    Text("Share")
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+
+        }//contextMenu
         .alert("NO avilitado", isPresented: $showError) {
             Button("OK") {
                 
             }
         } message: {
             Text("Lo sentimos esta caracteristica esta pronto abilitada")
+        }
+        .sheet(isPresented: $showOptions) {
+            let defaulttext = "Just Checking in at \(restaurant.name)"
+            
+            if let imageToShare = UIImage(named: restaurant.image){
+                ActivityView(activityItems: [defaulttext, imageToShare])
+            } else {
+                ActivityView(activityItems: [defaulttext])
+            }
         }
     }
 }
